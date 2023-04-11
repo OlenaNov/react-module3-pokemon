@@ -1,4 +1,7 @@
+import PockemonErrorView from "components/PockemonErroreView/PockemonErrorView";
+import PokemonDataView from "components/PokemonDataView/PokemonDataView";
 import { Component } from "react";
+import PokemonPendingView from "../PokemonPendingView/PokemonPendingView";
 
 const URL_BASE = 'https://pokeapi.co/api/v2/pokemon/';
 
@@ -6,8 +9,8 @@ export class PokemonInfo extends Component {
 
     state ={
         pokemon: null,
-        loading: false,
         error: null,
+        status: 'idle',
       };
 
     componentDidUpdate(prevProps, prevState) {
@@ -15,7 +18,7 @@ export class PokemonInfo extends Component {
         const { pokemonName } = this.props;
         if(prevProps.pokemonName !== pokemonName) {
 
-                this.setState({ loading: true, });
+                this.setState({ status: 'pending' });
           
                 fetch(URL_BASE + pokemonName)
                 .then(response => {
@@ -25,31 +28,30 @@ export class PokemonInfo extends Component {
                     return Promise.reject(new Error(`Don't pokemon with name ${pokemonName}`));
                     })
                 .then(pokemon => 
-                  this.setState({ pokemon, })
+                  this.setState({ pokemon, status: 'resolved' })
                 )
-                .catch(error => this.setState({ error }))
-                .finally(() => 
-                this.setState({ loading: false, }))
+                .catch(error => this.setState({ error, status: 'rejected' }))
           
         };
     };
 
     render() {
-        const { pokemon, loading, error } = this.state;
-        const { pokemonName } = this.props;
+        const { pokemon, error, status } = this.state;
 
-        return(
-            <div>
-                {error && <p>{error.message}</p>}
-                {loading && <p>Loading....</p>}
-                {!pokemonName && <p>Write the pokemon name</p> }
-                {pokemon && 
-                <div>
-                    <h2>{pokemon.name}</h2>
-                    <img src={pokemon.sprites.other['official-artwork'].front_default} alt={pokemon.name} width="300px"  />
-                </div>
-                 }
-            </div>
-        )
+            if(status === 'idle') {
+                return <p>Write the pokemon name</p>;
+            };
+
+            if(status === 'pending') {
+                return <PokemonPendingView />
+            };
+
+            if(status === 'rejected') {
+                return <PockemonErrorView message={error.message} /> ;
+            };
+
+            if(status === 'resolved') {
+                return <PokemonDataView pokemon={pokemon} /> 
+            };
     };
 };
